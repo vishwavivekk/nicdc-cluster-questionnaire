@@ -111,10 +111,4 @@ nicdc_app/
 
 - **Add / edit questions** → modify `SECTIONS` in `questions.py`. Storage and UI pick up changes automatically; new keys are exported on next download.
 - **Theme** → edit the CSS block at the top of `app.py` and the colour values in `.streamlit/config.toml`.
-- **Logo** → replace `assets/logo.svg` with the official NICDC mark. Keep the file name to avoid touching `app.py`.
-
----
-
-## Licence
-
-Internal use within NICDC and partner organisations. Not for redistribution.
+- **Logo** → replace `assets/logo.svg` with the offici

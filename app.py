@@ -119,83 +119,43 @@ a[href^="#"][class*="anchor"]          {{display: none !important;}}
         {BG_SOFT};
 }}
 
-/* ── Banner (letterhead style) ────────────────────────────────────── */
-.nicdc-banner {{
-    background: #FFFFFF;
-    border: 1px solid {BORDER};
-    border-top: 5px solid {LETTERHEAD};
-    border-radius: 12px;
-    padding: 22px 28px 20px;
-    margin-bottom: 18px;
-    color: {TEXT_DARK};
-    box-shadow: 0 8px 24px rgba(11,37,69,0.07);
+/* ── Centered logo header (screenshot-3 style) ─────────────────────── */
+.nicdc-header {{
+    text-align: center;
+    margin: 4px 0 26px;
+    padding: 14px 0 6px;
+}}
+.nicdc-header .logo-wrap {{
     display: flex;
-    align-items: center;
-    gap: 26px;
-    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 18px;
 }}
-.nicdc-banner .brand {{
-    flex: 0 0 auto;
-    padding: 4px;
+.nicdc-header .logo-wrap img,
+.nicdc-header .logo-wrap svg {{
+    height: 170px; width: auto; display: block;
 }}
-.nicdc-banner .brand svg,
-.nicdc-banner .brand img {{
-    height: 120px; width: auto; display: block;
-}}
-.nicdc-banner .meta {{ flex: 1 1 420px; }}
-.nicdc-banner .eyebrow {{
-    text-transform: uppercase;
-    letter-spacing: 2.4px;
-    font-size: 10.5px;
-    color: {TEXT_MUTED};
-    font-weight: 700;
-    margin-bottom: 6px;
-}}
-.nicdc-banner h1.letterhead {{
-    margin: 0 0 4px;
-    font-size: 26px;
-    line-height: 1.18;
-    font-weight: 900;
-    letter-spacing: 0.6px;
+.nicdc-header h1.header-title {{
+    margin: 0 auto 6px;
     color: {LETTERHEAD};
+    font-weight: 900;
+    font-size: 28px;
+    line-height: 1.25;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
     text-decoration: underline;
     text-decoration-color: {LETTERHEAD};
-    text-decoration-thickness: 2px;
-    text-underline-offset: 5px;
+    text-decoration-thickness: 2.5px;
+    text-underline-offset: 6px;
     font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif;
-    text-transform: uppercase;
 }}
-.nicdc-banner .subtitle {{
-    margin-top: 10px;
+.nicdc-header .page-title {{
+    margin-top: 14px;
+    color: {NAVY};
     font-weight: 800;
-    font-size: 18px;
-    color: {NAVY};
+    font-size: 19px;
     letter-spacing: 0.3px;
 }}
-.nicdc-banner .subtitle .accent {{ color: {LETTERHEAD}; }}
-.nicdc-banner p {{
-    margin: 6px 0 0;
-    color: {TEXT_MUTED};
-    font-size: 13.5px;
-    max-width: 720px;
-    line-height: 1.55;
-}}
-.tag-row {{ margin-top: 12px; display:flex; gap:8px; flex-wrap:wrap; }}
-.tag-pill {{
-    background: #FFF5EB;
-    border: 1px solid #F5C9A1;
-    color: {LETTERHEAD};
-    font-size: 11.5px;
-    padding: 4px 11px;
-    border-radius: 999px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-}}
-.tag-pill.navy {{
-    background: #EEF2F8;
-    border-color: #C8D4E6;
-    color: {NAVY};
-}}
+.nicdc-header .page-title .accent {{ color: {LETTERHEAD}; }}
 
 /* ── Section cards ─────────────────────────────────────────────────── */
 .section-card {{
@@ -303,21 +263,13 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 # ───────────────────────────── Helpers ─────────────────────────────
 
-def render_banner(subtitle: str = "Survey Instrument · Association Engagement") -> None:
+def render_banner(subtitle: str = "") -> None:
+    """Centered NICDC header — logo on top, bold orange underlined wordmark below."""
     banner_html = f"""
-    <div class="nicdc-banner">
-        <div class="brand">{LOGO_HTML}</div>
-        <div class="meta">
-            <div class="eyebrow">Government of India · Public Sector Initiative</div>
-            <h1 class="letterhead">National Industrial Corridor<br/>Development Corporation</h1>
-            <div class="subtitle">Legacy Industrial Cluster <span class="accent">Questionnaire</span></div>
-            <p>{subtitle}</p>
-            <div class="tag-row">
-                <span class="tag-pill">India Reimagined</span>
-                <span class="tag-pill navy">Cluster Revitalisation</span>
-                <span class="tag-pill navy">MSME · Industrial Corridors</span>
-            </div>
-        </div>
+    <div class="nicdc-header">
+        <div class="logo-wrap">{LOGO_HTML}</div>
+        <h1 class="header-title">National Industrial Corridor<br/>Development Corporation</h1>
+        <div class="page-title">Legacy Industrial Cluster <span class="accent">Questionnaire</span></div>
     </div>
     """
     st.markdown(banner_html, unsafe_allow_html=True)
@@ -433,10 +385,7 @@ def _render_repeat(q: dict, section_id: str, container) -> dict:
 # ─────────────────────────── PUBLIC: Form page ────────────────────────
 
 def page_form() -> None:
-    render_banner(
-        "Help shape India's cluster revitalisation programme. "
-        "Your responses will be treated confidentially and used for research and policy support."
-    )
+    render_banner()
 
     st.markdown(
         f"""
@@ -455,28 +404,31 @@ def page_form() -> None:
     if "submitted_payload_id" not in st.session_state:
         st.session_state["submitted_payload_id"] = None
 
-    with st.form("nicdc_form", clear_on_submit=False):
-        collected: dict = {}
+    # NOTE: We intentionally do NOT wrap the questionnaire in st.form() because
+    # the repeat-block sections need st.button() for Add/Remove, which Streamlit
+    # forbids inside forms. Widget values still persist in st.session_state via
+    # the `key=` parameter on every widget, so we collect them via a single
+    # submit button at the bottom.
+    collected: dict = {}
+    for section in SECTIONS:
+        section_header(section)
+        with st.container():
+            for q in section["questions"]:
+                if q["type"] == "repeat":
+                    collected[f"{section['id']}__{q['id']}"] = _render_repeat(q, section["id"], st)
+                elif q["type"] == "info":
+                    _render_question(q, key_prefix=section["id"], container=st)
+                else:
+                    collected[f"{section['id']}__{q['id']}"] = _render_question(
+                        q, key_prefix=section["id"], container=st
+                    )
 
-        for section in SECTIONS:
-            section_header(section)
-            with st.container():
-                for q in section["questions"]:
-                    if q["type"] == "repeat":
-                        collected[f"{section['id']}__{q['id']}"] = _render_repeat(q, section["id"], st)
-                    elif q["type"] == "info":
-                        _render_question(q, key_prefix=section["id"], container=st)
-                    else:
-                        collected[f"{section['id']}__{q['id']}"] = _render_question(
-                            q, key_prefix=section["id"], container=st
-                        )
-
-        st.markdown("---")
-        col_a, col_b = st.columns([1, 3])
-        with col_a:
-            submitted = st.form_submit_button("✅ Submit Response", use_container_width=True)
-        with col_b:
-            st.caption("By submitting, you confirm that the information provided is accurate to the best of your knowledge.")
+    st.markdown("---")
+    col_a, col_b = st.columns([1, 3])
+    with col_a:
+        submitted = st.button("✅ Submit Response", use_container_width=True, type="primary", key="nicdc_submit_btn")
+    with col_b:
+        st.caption("By submitting, you confirm that the information provided is accurate to the best of your knowledge.")
 
     if submitted:
         # Required-field validation
@@ -509,7 +461,12 @@ def page_form() -> None:
 # ─────────────────────────── ADMIN page ──────────────────────────────
 
 def page_admin() -> None:
-    render_banner("Administrator Dashboard · view, filter and export survey responses")
+    render_banner()
+    st.markdown(
+        '<div style="text-align:center;color:#5A6B82;font-size:14px;margin:-8px 0 18px;">'
+        'Administrator Dashboard · view, filter and export survey responses</div>',
+        unsafe_allow_html=True,
+    )
 
     if "admin_authed" not in st.session_state:
         st.session_state["admin_authed"] = False
@@ -618,42 +575,4 @@ def page_admin() -> None:
 # ───────────────────────────── App entry point ─────────────────────────
 
 def main() -> None:
-    init_db()
-
-    with st.sidebar:
-        # Inline logo in sidebar too
-        st.markdown(
-            f'<div style="background:#FFFFFF;padding:10px;border-radius:8px;margin-bottom:8px;text-align:center;">{LOGO_HTML}</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown("### Navigation")
-        page = st.radio(
-            label="Navigate",
-            options=["📝 Fill Questionnaire", "🔐 Administrator"],
-            index=0,
-            label_visibility="collapsed",
-        )
-        st.markdown(
-            '<div class="sidebar-card">'
-            '<strong>About</strong><br/>'
-            'This portal collects insights on legacy industrial clusters across India to inform '
-            'the cluster revitalisation programme under the National Industrial Corridor Development Corporation.'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            '<div class="sidebar-card">'
-            '<strong>Need help?</strong><br/>'
-            'Write to your NICDC programme coordinator or save your draft answers locally before submitting.'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-
-    if page.startswith("📝"):
-        page_form()
-    else:
-        page_admin()
-
-
-if __name__ == "__main__":
-    main()
+    init
