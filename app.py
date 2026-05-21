@@ -34,7 +34,27 @@ from storage import (
 # ───────────────────────────── Page / theme setup ──────────────────────────────
 
 ASSETS = Path(__file__).parent / "assets"
-LOGO_SVG = (ASSETS / "logo.svg").read_text(encoding="utf-8") if (ASSETS / "logo.svg").exists() else ""
+
+
+def _load_logo_html() -> str:
+    """Prefer official PNG / JPG if present, fall back to SVG."""
+    for fname in ("logo.png", "logo.jpg", "logo.jpeg"):
+        f = ASSETS / fname
+        if f.exists():
+            ext = f.suffix.lower().lstrip(".")
+            mime = "jpeg" if ext in ("jpg", "jpeg") else ext
+            data = base64.b64encode(f.read_bytes()).decode("ascii")
+            return (
+                f'<img src="data:image/{mime};base64,{data}" alt="NICDC" '
+                f'style="height:120px;width:auto;display:block;"/>'
+            )
+    svg = ASSETS / "logo.svg"
+    if svg.exists():
+        return svg.read_text(encoding="utf-8")
+    return ""
+
+
+LOGO_HTML = _load_logo_html()
 
 st.set_page_config(
     page_title="NICDC · Legacy Industrial Cluster Questionnaire",
@@ -55,6 +75,8 @@ BG_SOFT     = "#F5F7FA"
 BORDER      = "#DCE3EE"
 TEXT_DARK   = "#0E1B2C"
 TEXT_MUTED  = "#5A6B82"
+LETTERHEAD  = "#C25932"  # burnt-orange used in NICDC letterhead wordmark
+LOGO_RED    = "#9A3324"  # burgundy used in NICDC tree-logo lettering
 
 CSS = f"""
 <style>
@@ -72,10 +94,23 @@ html, body, [class*="css"]  {{
     color: {TEXT_DARK};
 }}
 
-/* Hide default Streamlit chrome for a cleaner portal feel */
-#MainMenu {{visibility: hidden;}}
-footer {{visibility: hidden;}}
-header[data-testid="stHeader"] {{background: transparent;}}
+/* ── Hide ALL default Streamlit chrome (toolbar with Share / star / edit / GitHub, status widget, decoration line, main menu, footer) ── */
+#MainMenu                              {{display: none !important;}}
+footer                                 {{display: none !important;}}
+header[data-testid="stHeader"]         {{display: none !important; height: 0 !important;}}
+[data-testid="stToolbar"]              {{display: none !important;}}
+[data-testid="stToolbarActions"]       {{display: none !important;}}
+[data-testid="stDecoration"]           {{display: none !important;}}
+[data-testid="stStatusWidget"]         {{display: none !important;}}
+[data-testid="stDeployButton"]         {{display: none !important;}}
+[data-testid="stActionButton"]         {{display: none !important;}}
+[data-testid="stAppViewBlockContainer"]{{padding-top: 1.2rem !important;}}
+.viewerBadge_container__1QSob          {{display: none !important;}}
+.styles_viewerBadge__1yB5_             {{display: none !important;}}
+.stAppDeployButton                     {{display: none !important;}}
+div[class*="viewerBadge"]              {{display: none !important;}}
+/* Hide the hovering anchor link icons next to headings */
+a[href^="#"][class*="anchor"]          {{display: none !important;}}
 
 .stApp {{
     background:
@@ -84,61 +119,82 @@ header[data-testid="stHeader"] {{background: transparent;}}
         {BG_SOFT};
 }}
 
-/* ── Banner ───────────────────────────────────────────────────────── */
+/* ── Banner (letterhead style) ────────────────────────────────────── */
 .nicdc-banner {{
-    background: linear-gradient(135deg, {NAVY} 0%, {NAVY_SOFT} 60%, {NAVY_DEEP} 100%);
-    border-radius: 14px;
-    padding: 22px 28px;
+    background: #FFFFFF;
+    border: 1px solid {BORDER};
+    border-top: 5px solid {LETTERHEAD};
+    border-radius: 12px;
+    padding: 22px 28px 20px;
     margin-bottom: 18px;
-    color: #FFFFFF;
-    box-shadow: 0 12px 28px rgba(11,37,69,0.18);
-    border: 1px solid rgba(255,255,255,0.06);
+    color: {TEXT_DARK};
+    box-shadow: 0 8px 24px rgba(11,37,69,0.07);
     display: flex;
     align-items: center;
-    gap: 22px;
+    gap: 26px;
     flex-wrap: wrap;
 }}
 .nicdc-banner .brand {{
-    background: #FFFFFF;
-    padding: 10px 14px;
-    border-radius: 10px;
     flex: 0 0 auto;
-    box-shadow: inset 0 0 0 1px rgba(11,37,69,0.06);
+    padding: 4px;
 }}
-.nicdc-banner .brand svg {{ height: 76px; width: auto; display:block; }}
-.nicdc-banner .meta {{ flex: 1 1 360px; }}
+.nicdc-banner .brand svg,
+.nicdc-banner .brand img {{
+    height: 120px; width: auto; display: block;
+}}
+.nicdc-banner .meta {{ flex: 1 1 420px; }}
 .nicdc-banner .eyebrow {{
     text-transform: uppercase;
-    letter-spacing: 2px;
-    font-size: 11px;
-    color: {SAFFRON_LT};
+    letter-spacing: 2.4px;
+    font-size: 10.5px;
+    color: {TEXT_MUTED};
     font-weight: 700;
+    margin-bottom: 6px;
 }}
-.nicdc-banner h1 {{
-    margin: 6px 0 4px;
+.nicdc-banner h1.letterhead {{
+    margin: 0 0 4px;
     font-size: 26px;
-    line-height: 1.2;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-    color: #FFFFFF;
+    line-height: 1.18;
+    font-weight: 900;
+    letter-spacing: 0.6px;
+    color: {LETTERHEAD};
+    text-decoration: underline;
+    text-decoration-color: {LETTERHEAD};
+    text-decoration-thickness: 2px;
+    text-underline-offset: 5px;
+    font-family: 'Arial Black','Helvetica Neue',Arial,sans-serif;
+    text-transform: uppercase;
 }}
-.nicdc-banner h1 span {{ color: {SAFFRON_LT}; }}
+.nicdc-banner .subtitle {{
+    margin-top: 10px;
+    font-weight: 800;
+    font-size: 18px;
+    color: {NAVY};
+    letter-spacing: 0.3px;
+}}
+.nicdc-banner .subtitle .accent {{ color: {LETTERHEAD}; }}
 .nicdc-banner p {{
-    margin: 0;
-    color: #C9D5E6;
+    margin: 6px 0 0;
+    color: {TEXT_MUTED};
     font-size: 13.5px;
     max-width: 720px;
+    line-height: 1.55;
 }}
-.tag-row {{ margin-top: 10px; display:flex; gap:8px; flex-wrap:wrap; }}
+.tag-row {{ margin-top: 12px; display:flex; gap:8px; flex-wrap:wrap; }}
 .tag-pill {{
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.18);
-    color: #E9EEF7;
+    background: #FFF5EB;
+    border: 1px solid #F5C9A1;
+    color: {LETTERHEAD};
     font-size: 11.5px;
-    padding: 4px 10px;
+    padding: 4px 11px;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.3px;
+}}
+.tag-pill.navy {{
+    background: #EEF2F8;
+    border-color: #C8D4E6;
+    color: {NAVY};
 }}
 
 /* ── Section cards ─────────────────────────────────────────────────── */
@@ -250,15 +306,16 @@ st.markdown(CSS, unsafe_allow_html=True)
 def render_banner(subtitle: str = "Survey Instrument · Association Engagement") -> None:
     banner_html = f"""
     <div class="nicdc-banner">
-        <div class="brand">{LOGO_SVG}</div>
+        <div class="brand">{LOGO_HTML}</div>
         <div class="meta">
             <div class="eyebrow">Government of India · Public Sector Initiative</div>
-            <h1>Legacy Industrial Cluster <span>Questionnaire</span></h1>
+            <h1 class="letterhead">National Industrial Corridor<br/>Development Corporation</h1>
+            <div class="subtitle">Legacy Industrial Cluster <span class="accent">Questionnaire</span></div>
             <p>{subtitle}</p>
             <div class="tag-row">
                 <span class="tag-pill">India Reimagined</span>
-                <span class="tag-pill">Cluster Revitalisation</span>
-                <span class="tag-pill">MSME · Industrial Corridors</span>
+                <span class="tag-pill navy">Cluster Revitalisation</span>
+                <span class="tag-pill navy">MSME · Industrial Corridors</span>
             </div>
         </div>
     </div>
@@ -283,7 +340,7 @@ def get_admin_password() -> str:
     except (FileNotFoundError, RuntimeError, KeyError):
         pass
     import os
-    return os.getenv("NICDC_ADMIN_PASSWORD", "nicdc-admin-2026")
+    return os.getenv("NICDC_ADMIN_PASSWORD", "NICDC@11444")
 
 
 def _hash(text: str) -> str:
@@ -565,7 +622,10 @@ def main() -> None:
 
     with st.sidebar:
         # Inline logo in sidebar too
-        st.markdown(f'<div style="background:#FFFFFF;padding:10px;border-radius:8px;margin-bottom:8px;">{LOGO_SVG}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="background:#FFFFFF;padding:10px;border-radius:8px;margin-bottom:8px;text-align:center;">{LOGO_HTML}</div>',
+            unsafe_allow_html=True,
+        )
         st.markdown("### Navigation")
         page = st.radio(
             label="Navigate",

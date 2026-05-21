@@ -37,7 +37,7 @@ Open <http://localhost:8501> in your browser.
 - **Fill Questionnaire** tab — anyone with the link can submit.
 - **Administrator** tab — sign in with the admin password to view / export responses.
 
-If no password is configured, the fallback is `nicdc-admin-2026`. **Change this before deploying.**
+If no password is configured, the fallback is `NICDC@11444`. **Change this before deploying** by setting `admin_password` in `.streamlit/secrets.toml` (locally) or in Streamlit Cloud → Settings → Secrets.
 
 ---
 
@@ -47,8 +47,9 @@ If no password is configured, the fallback is `nicdc-admin-2026`. **Change this 
 2. Go to <https://share.streamlit.io/> → **New app** → pick your repo, branch, and `app.py`.
 3. In **Advanced settings → Secrets**, paste:
    ```toml
-   admin_password = "your-strong-password"
+   admin_password = "NICDC@11444"
    ```
+   (Change this string to override the in-code default.)
 4. Deploy. Your public URL will look like `https://<your-app>.streamlit.app/`.
 
 > ⚠️ **Persistence note:** Streamlit Community Cloud uses an ephemeral filesystem — `data/responses.db` may be reset when the app sleeps or redeploys. For production, point the DB at persistent storage:
